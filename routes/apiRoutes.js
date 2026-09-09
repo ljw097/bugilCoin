@@ -2,6 +2,12 @@ const express = require('express');
 const router = express.Router();
 const db = require('../db/db')
 
+async function getInfo(type, param) {
+    if(type === 'stock') {
+        db.run('SELECT price FROM stocks WHERE id = (?)', [param])
+    }
+}
+
 async function validateMoney(id, extract) {
     const userMoney = getInfo('userMoney', id);
     if(userMoney >= extract) {
@@ -70,10 +76,9 @@ router.post('/buy', async (req,res) => {
         alterMoney('e', id, price * count);
         alterPoss('b', id, type, count);
 
-        const userInfo = getInfo('userMoney', id);
+        const leftMoney = getInfo('userMoney', id);
         res.send({ ok: true, leftMoney})
     } else {
-    //userStock = ["1":"30", ]
 
     }
 })
