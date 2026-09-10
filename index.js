@@ -7,7 +7,11 @@ const fs = require('fs');
 const session = require('express-session');
 const sqlite3 = require('sqlite3').verbose();
 const dotenv = require('dotenv').config({path: path.resolve(__dirname, '.env')});
-const db = require('./db/db')
+const db = require('./db/db');
+
+db.initializeDatabase().catch((err) => {
+    console.error('Database initialization failed:', err);
+});
 
 app.use(bodyParser.urlencoded({ extended: true }));
 app.use(session({

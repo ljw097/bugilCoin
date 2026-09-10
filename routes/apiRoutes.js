@@ -1,72 +1,57 @@
 const express = require('express');
 const router = express.Router();
-const db = require('../db/db')
+const db = require('../db/db');
+const { normalizeStockMap } = require('../db/db');
 
 async function getInfo(type, param) {
     if(type === 'stock') {
         const stockPrice = await new Promise((resolve, reject) => {
             db.get(`SELECT price FROM stocks WHERE id = (?)`, [param], (err, result) => {
                 if(err) reject(err);
-                resolve(result);
+                resolve(result || {});
             })
-        })
-        const price = stockPrice["price"];
-        return price;
+        });
+        return stockPrice && stockPrice.price !== undefined ? stockPrice.price : 0;
     }
     if(type === 'userMoney') {
         const userMoney = await new Promise((resolve, reject) => {
             db.get(`SELECT money FROM users WHERE username = (?)`, [param], (err, result) => {
                 if(err) reject(err);
-                resolve(result);
+                resolve(result || { money: 0 });
             });
-        })
-        const money = userMoney["money"];
-        return money;
+        });
+        return Number(userMoney.money || 0);
     }
     if(type === 'userStock') {
-        //console.log(param);
-        //const userStock = await db.get('SELECT stock FROM users WHERE id = (?)', [param]);
         const userStock = await new Promise((resolve, reject) => {
             db.get(`SELECT stock FROM users WHERE username = (?)`, [param], (err, result) => {
                 if(err) reject(err);
-                resolve(result);
+                resolve(result || { stock: '{}' });
             });
-        })
-        const stocks = JSON.parse(userStock["stock"]);
-        //console.log(stocks);
-        return stocks;
+        });
+        return normalizeStockMap(userStock.stock);
     }
 }
 
 async function validateMoney(id, extract) {
     const userMoney = await getInfo('userMoney', id);
-    if(userMoney >= extract) {
-        return true;
-    } else {
-        return false;
-    }
+    return Number(userMoney) >= Number(extract);
 }
 
 async function validateStock(id, type, count) {
     const userStock = await getInfo('userStock', id);
-    //console.log(userStock[type]);
-    //console.log(count);
-    if(userStock[type] >= count) {
-        return true;
-    } else {
-        return false;
-    }
+    const currentCount = Number(userStock[String(type)] || 0);
+    return currentCount >= Number(count);
 }
 
 async function alterMoney(type, id, price) {
     const userMoney = await getInfo('userMoney', id);
-    if(type === 'd') { //deposit
-        await db.run('UPDATE users SET money = (?) WHERE username = (?)', [userMoney + price, id]);
-        //const moneyIn = await getInfo('userMoney', id);
-        //console.log("moneyin: ", moneyIn);
+    const nextMoney = Number(price);
+    if(type === 'd') {
+        await db.run('UPDATE users SET money = (?) WHERE username = (?)', [userMoney + nextMoney, id]);
         return true;
-    } else if(type === 'w') { //withdrawl
-        await db.run('UPDATE users SET money = (?) WHERE username = (?)', [userMoney - price, id]);
+    } else if(type === 'w') {
+        await db.run('UPDATE users SET money = (?) WHERE username = (?)', [userMoney - nextMoney, id]);
         return true;
     } else {
         return false;
@@ -75,37 +60,25 @@ async function alterMoney(type, id, price) {
 
 async function alterPoss(type, id, spec, count) {
     const userStock = await getInfo('userStock', id);
-    //console.log('request in alterPoss(), spec ', spec, ' requesting ', count);
-    //console.log(userStock)
-    const specifStock = userStock[spec];
-    //userStock = { "1": 1, "2": 2 };
-    if(type === 'b') { //buy
-        const newStock = userStock[spec] + count;
-        userStock[spec] = newStock;
-        //console.log(userStock);
-        const payload = JSON.stringify(userStock);
-        await new Promise((resolve, reject) => {
-            db.run('UPDATE users SET stock = (?) WHERE username = (?)', [payload, id], (err) => {
-                if(err) reject(err);
-                resolve(true);
-            });
-        })
-        return true;
-    } else if(type === 's') { //sell
-        const newStock = userStock[spec] - count;
-        userStock[spec] = newStock;
-        const payload = JSON.stringify(userStock);
-        await new Promise((resolve, reject) => {
-            db.run('UPDATE users SET stock = (?) WHERE username = (?)', [payload, id], (err) => {
-                if(err) reject(err);
-                resolve(true);
-            });
-        })
-        //console.log('altered stock value: ', userStock[spec], ' -> ', newStock)
-        return true;
+    const stockKey = String(spec);
+    const currentCount = Number(userStock[stockKey] || 0);
+
+    if(type === 'b') {
+        userStock[stockKey] = currentCount + Number(count);
+    } else if(type === 's') {
+        userStock[stockKey] = currentCount - Number(count);
     } else {
         return false;
     }
+
+    const payload = JSON.stringify(userStock);
+    await new Promise((resolve, reject) => {
+        db.run('UPDATE users SET stock = (?) WHERE username = (?)', [payload, id], (err) => {
+            if(err) reject(err);
+            resolve(true);
+        });
+    });
+    return true;
 }
 
 router.get('/users', (req, res) => {
