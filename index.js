@@ -27,19 +27,20 @@ app.use(session({
             });
 
         })
-        console.log(test["money"]);
+        console.log((test["money"] > 10));
     } catch(err) {
         console.log(err);
     }
-    
 })(); */
 
 //const loginRoutes = require('./routes/loginRoutes');
 const apiRoutes = require('./routes/apiRoutes');
+const authRoutes = require('./routes/authRoutes');
 
 app.use(cors());
 app.use(express.json());
 app.use('/api', apiRoutes);
+app.use('/auth', authRoutes);
 
 app.get('/', (req, res) => {
     res.send('Welcome to the BugilCoin API');

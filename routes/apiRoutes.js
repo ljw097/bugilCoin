@@ -15,23 +15,25 @@ async function getInfo(type, param) {
     }
     if(type === 'userMoney') {
         const userMoney = await new Promise((resolve, reject) => {
-            db.get(`SELECT money FROM users WHERE id = (?)`, [param], (err, result) => {
+            db.get(`SELECT money FROM users WHERE username = (?)`, [param], (err, result) => {
                 if(err) reject(err);
                 resolve(result);
             });
         })
-        const money = userMoney["money"]
+        const money = userMoney["money"];
         return money;
     }
     if(type === 'userStock') {
+        //console.log(param);
         //const userStock = await db.get('SELECT stock FROM users WHERE id = (?)', [param]);
         const userStock = await new Promise((resolve, reject) => {
-            db.get(`SELECT stock FROM users WHERE id = (?)`, [param], (err, result) => {
+            db.get(`SELECT stock FROM users WHERE username = (?)`, [param], (err, result) => {
                 if(err) reject(err);
                 resolve(result);
             });
         })
-        const stocks = JSON.parse(userStock["stocks"]);
+        const stocks = JSON.parse(userStock["stock"]);
+        console.log(stocks);
         return stocks;
     }
 }
@@ -46,8 +48,10 @@ async function validateMoney(id, extract) {
 }
 
 async function validateStock(id, type, count) {
-    const userStock = getInfo('userStock', id);
-    if(userStock >= count) {
+    const userStock = await getInfo('userStock', id);
+    //console.log(userStock[type]);
+    //console.log(count);
+    if(userStock[type] >= count) {
         return true;
     } else {
         return false;
@@ -55,12 +59,14 @@ async function validateStock(id, type, count) {
 }
 
 async function alterMoney(type, id, price) {
-    const userMoney = getInfo('userMoney', id);
+    const userMoney = await getInfo('userMoney', id);
     if(type === 'd') { //deposit
-        await db.run('UPDATE users SET money = (?) WHERE id = (?)', [userMoney + price, id]);
+        await db.run('UPDATE users SET money = (?) WHERE username = (?)', [userMoney + price, id]);
+        //const moneyIn = await getInfo('userMoney', id);
+        //console.log("moneyin: ", moneyIn);
         return true;
     } else if(type === 'w') { //withdrawl
-        await db.run('UPDATE users SET money = (?) WHERE id = (?)', [userMoney - price, id]);
+        await db.run('UPDATE users SET money = (?) WHERE username = (?)', [userMoney - price, id]);
         return true;
     } else {
         return false;
@@ -68,16 +74,33 @@ async function alterMoney(type, id, price) {
 }
 
 async function alterPoss(type, id, spec, count) {
-    const userStock = getInfo('userStock', id)
+    const userStock = await getInfo('userStock', id);
+    console.log('request in alterPoss(), spec ', spec, ' requesting ', count);
+    console.log(userStock)
     const specifStock = userStock[spec];
     //userStock = { "1": 1, "2": 2 };
     if(type === 'b') { //buy
-        const newStock = userStock[spec] += count;
-        await db.run('UPDATE users SET stock = (?) WHERE id = (?)', [newStock, id]);
+        const newStock = userStock[spec] + count;
+        userStock[spec] = newStock;
+        console.log(userStock);
+        await new Promise((resolve, reject) => {
+            db.run('UPDATE users SET stock = (?) WHERE username = (?)', [userStock, id], (err) => {
+                if(err) reject(err);
+                resolve(true);
+            });
+        })
         return true;
     } else if(type === 's') { //sell
-        const newStock = userStock[spec] -= count;
-        await db.run('UPDATE users SET stock = (?) WHERE id = (?)', [newStock, id]);
+        const newStock = userStock[spec] - count;
+        userStock[spec] = newStock;
+        const payload = JSON.stringify(userStock);
+        await new Promise((resolve, reject) => {
+            db.run('UPDATE users SET stock = (?) WHERE username = (?)', [payload, id], (err) => {
+                if(err) reject(err);
+                resolve(true);
+            });
+        })
+        console.log('altered stock value: ', userStock[spec], ' -> ', newStock)
         return true;
     } else {
         return false;
@@ -124,18 +147,22 @@ router.post('/buy', async (req,res) => {
 })
 
 router.post('/sell', async (req, res) => {
+    console.log("inbound request: sell, type: ", req.body.type, ", count: ", req.body.count);
     const { id, count, type } = req.body;
-    const price = getInfo('stock', type);
+    const price = await getInfo('stock', type);
+    const money = await getInfo('userMoney', id);
+    console.log('money on entrance: ', money)
     //const isValidMoney = await validateMoney(id, price * count)
     const isValidStock = await validateStock(id, type, count);
+    
     if(isValidStock) {
         //placeholder for changing stock prices
-
-        alterMoney('d', id, price * count);
-        alterPoss('s', id, type, count);
+        await alterMoney('d', id, price * count);
+        await alterPoss('s', id, type, count);
 
         const leftMoney = await getInfo('userMoney', id);
         const leftStock = await getInfo('userStock', id);
+        console.log('money on exit: ', leftMoney)
         res.send({ "ok": true, "leftMoney": leftMoney, "leftStock": leftStock});
     } else {
         res.send({ ok: false, "error": "INSUFFICIENT"});

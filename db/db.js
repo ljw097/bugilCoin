@@ -23,6 +23,7 @@ db.serialize(() => {
     );
     CREATE TABLE IF NOT EXISTS stocks (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
+      name TEXT UNIQUE,
       price INTEGER
     )
   `);
