@@ -39,7 +39,7 @@ async function getInfo(type, param) {
 }
 
 async function validateMoney(id, extract) {
-    const userMoney = getInfo('userMoney', id);
+    const userMoney = await getInfo('userMoney', id);
     if(userMoney >= extract) {
         return true;
     } else {
@@ -83,8 +83,9 @@ async function alterPoss(type, id, spec, count) {
         const newStock = userStock[spec] + count;
         userStock[spec] = newStock;
         //console.log(userStock);
+        const payload = JSON.stringify(userStock);
         await new Promise((resolve, reject) => {
-            db.run('UPDATE users SET stock = (?) WHERE username = (?)', [userStock, id], (err) => {
+            db.run('UPDATE users SET stock = (?) WHERE username = (?)', [payload, id], (err) => {
                 if(err) reject(err);
                 resolve(true);
             });
@@ -130,43 +131,54 @@ router.get('/users', (req, res) => {
 
 router.post('/buy', async (req,res) => {
     const { id, count, type } = req.body;
-    const price = getInfo('stock', type);
+    const price = await getInfo('stock', type);
     const isValidMoney = await validateMoney(id, price * count)
-    if(isValidMoney) {
-        //placeholder for changing stock prices
+    console.log(isValidMoney)
+    if(count > 0) {
+        if(isValidMoney) {
+            //placeholder for changing stock prices
 
-        alterMoney('w', id, price * count);
-        alterPoss('b', id, type, count);
+            await alterMoney('w', id, price * count);
+            await alterPoss('b', id, type, count);
 
-        const leftMoney = await getInfo('userMoney', id);
-        const leftStock = await getInfo('userStock', id);
-        res.send({ "ok": true, "leftMoney": leftMoney, "leftStock": leftStock});
+            const leftMoney = await getInfo('userMoney', id);
+            const leftStock = await getInfo('userStock', id);
+            res.send({ "ok": true, "leftMoney": leftMoney, "leftStock": leftStock});
+        } else {
+            res.send({ "ok": false, "error": "INSUFFICIENT"});
+        }
     } else {
-        res.send({ ok: false, "error": "INSUFFICIENT"});
+        res.send({ "ok": false, "error": "COUNT_BELOW_ZERO"});
     }
-})
+});
 
 router.post('/sell', async (req, res) => {
     //console.log("inbound request: sell, type: ", req.body.type, ", count: ", req.body.count);
     const { id, count, type } = req.body;
     const price = await getInfo('stock', type);
     const money = await getInfo('userMoney', id);
-    console.log('money on entrance: ', money)
+    //console.log('money on entrance: ', money)
     //const isValidMoney = await validateMoney(id, price * count)
     const isValidStock = await validateStock(id, type, count);
-    
-    if(isValidStock) {
-        //placeholder for changing stock prices
-        await alterMoney('d', id, price * count);
-        await alterPoss('s', id, type, count);
+    if(count > 0) {
+        if(isValidStock) {
 
-        const leftMoney = await getInfo('userMoney', id);
-        const leftStock = await getInfo('userStock', id);
-        //console.log('money on exit: ', leftMoney)
-        res.send({ "ok": true, "leftMoney": leftMoney, "leftStock": leftStock});
+            //placeholder for changing stock prices
+
+            await alterMoney('d', id, price * count);
+            await alterPoss('s', id, type, count);
+
+            const leftMoney = await getInfo('userMoney', id);
+            const leftStock = await getInfo('userStock', id);
+            //console.log('money on exit: ', leftMoney)
+            res.send({ "ok": true, "leftMoney": leftMoney, "leftStock": leftStock});
+        } else {
+            res.send({ "ok": false, "error": "INSUFFICIENT"});
+        }
     } else {
-        res.send({ ok: false, "error": "INSUFFICIENT"});
+        res.send({ "ok": false, "error": "COUNT_BELOW ZERO"});
     }
+    
 });
 
 module.exports = router;

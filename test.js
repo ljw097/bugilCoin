@@ -7,7 +7,7 @@ async function runDB() {
 
 }    
 async function postData() {
-  const url = 'http://localhost:4000/api/sell';
+  const url = 'http://localhost:4000/api/buy';
   
   const response = await fetch(url, {
     method: 'POST',
@@ -16,8 +16,8 @@ async function postData() {
     },
     body: JSON.stringify({
       id: 'test',
-      count: 0,
-      type: 1
+      count: 1,
+      type: 2
     })
   });
 
