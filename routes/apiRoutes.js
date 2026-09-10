@@ -33,7 +33,7 @@ async function getInfo(type, param) {
             });
         })
         const stocks = JSON.parse(userStock["stock"]);
-        console.log(stocks);
+        //console.log(stocks);
         return stocks;
     }
 }
@@ -75,14 +75,14 @@ async function alterMoney(type, id, price) {
 
 async function alterPoss(type, id, spec, count) {
     const userStock = await getInfo('userStock', id);
-    console.log('request in alterPoss(), spec ', spec, ' requesting ', count);
-    console.log(userStock)
+    //console.log('request in alterPoss(), spec ', spec, ' requesting ', count);
+    //console.log(userStock)
     const specifStock = userStock[spec];
     //userStock = { "1": 1, "2": 2 };
     if(type === 'b') { //buy
         const newStock = userStock[spec] + count;
         userStock[spec] = newStock;
-        console.log(userStock);
+        //console.log(userStock);
         await new Promise((resolve, reject) => {
             db.run('UPDATE users SET stock = (?) WHERE username = (?)', [userStock, id], (err) => {
                 if(err) reject(err);
@@ -100,7 +100,7 @@ async function alterPoss(type, id, spec, count) {
                 resolve(true);
             });
         })
-        console.log('altered stock value: ', userStock[spec], ' -> ', newStock)
+        //console.log('altered stock value: ', userStock[spec], ' -> ', newStock)
         return true;
     } else {
         return false;
@@ -147,7 +147,7 @@ router.post('/buy', async (req,res) => {
 })
 
 router.post('/sell', async (req, res) => {
-    console.log("inbound request: sell, type: ", req.body.type, ", count: ", req.body.count);
+    //console.log("inbound request: sell, type: ", req.body.type, ", count: ", req.body.count);
     const { id, count, type } = req.body;
     const price = await getInfo('stock', type);
     const money = await getInfo('userMoney', id);
@@ -162,7 +162,7 @@ router.post('/sell', async (req, res) => {
 
         const leftMoney = await getInfo('userMoney', id);
         const leftStock = await getInfo('userStock', id);
-        console.log('money on exit: ', leftMoney)
+        //console.log('money on exit: ', leftMoney)
         res.send({ "ok": true, "leftMoney": leftMoney, "leftStock": leftStock});
     } else {
         res.send({ ok: false, "error": "INSUFFICIENT"});
