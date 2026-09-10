@@ -16,13 +16,30 @@ app.use(session({
   saveUninitialized: true
 }));
 
+/*
+(async () => {
+    //await db.run(`INSERT INTO users (username, password, stock) VALUES ('test', 'test', '{"1":1, "2":2}')`);
+    try{
+        const test = await new Promise((resolve, reject) => {
+            db.get(`SELECT money FROM users WHERE username = (?)`, ['test'], (err, result) => {
+                if(err) return reject(err);
+                resolve(result);
+            });
+
+        })
+        console.log(test["money"]);
+    } catch(err) {
+        console.log(err);
+    }
+    
+})(); */
 
 //const loginRoutes = require('./routes/loginRoutes');
 const apiRoutes = require('./routes/apiRoutes');
 
 app.use(cors());
 app.use(express.json());
-app.use(apiRoutes);
+app.use('/api', apiRoutes);
 
 app.get('/', (req, res) => {
     res.send('Welcome to the BugilCoin API');
