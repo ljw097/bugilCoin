@@ -4,7 +4,16 @@ const db = require('../db/db')
 
 async function getInfo(type, param) {
     if(type === 'stock') {
-        db.run('SELECT price FROM stocks WHERE id = (?)', [param])
+        const stockPrice = db.run('SELECT price FROM stocks WHERE id = (?)', [param]);
+        return stockPrice;
+    }
+    if(type === 'userMoney') {
+        const userMoney = db.run('SELECT money FROM users WHERE id = (?)', [param]);
+        return userMoney;
+    }
+    if(type === 'userStock') {
+        const userStock = db.run('SELECT stock FROM users WHERE id = (?)', [param]);
+        return userStock;
     }
 }
 
@@ -17,8 +26,17 @@ async function validateMoney(id, extract) {
     }
 }
 
+async function validateStock(id, type, count) {
+    const userStock = getInfo('userStock', id);
+    if(userStock >= count) {
+        return true;
+    } else {
+        return false;
+    }
+}
+
 async function alterMoney(type, id, price) {
-    const userMoney = getInfo('userMoney', id)
+    const userMoney = getInfo('userMoney', id);
     if(type === 'd') { //deposit
         await db.run('UPDATE users SET money = (?) WHERE id = (?)', [userMoney + price, id]);
         return true;
@@ -73,18 +91,36 @@ router.post('/buy', async (req,res) => {
     const price = getInfo('stock', type);
     const isValid = await validateMoney(id, price * count)
     if(isValid) {
-        alterMoney('e', id, price * count);
+        //placeholder for changing stock prices
+
+        alterMoney('w', id, price * count);
         alterPoss('b', id, type, count);
 
-        const leftMoney = getInfo('userMoney', id);
-        res.send({ ok: true, leftMoney})
+        const leftMoney = await getInfo('userMoney', id);
+        const leftStock = await getInfo('userStock', id);
+        res.send({ "ok": true, "leftMoney": leftMoney, "leftStock": leftStock});
     } else {
-
+        res.send({ ok: false, "error": "INSUFFICIENT"});
     }
 })
 
-router.post('/sell', (req, res) => {
-    res.send(`Sell item with ID: ${id}`);
+router.post('/sell', async (req, res) => {
+    const { id, count, type } = req.body;
+    const price = getInfo('stock', type);
+    const isValid = await validateMoney(id, price * count)
+    const isValidStock = await validateStock(id, type, count);
+    if(isValid && isValidStock) {
+        //placeholder for changing stock prices
+
+        alterMoney('d', id, price * count);
+        alterPoss('s', id, type, count);
+
+        const leftMoney = await getInfo('userMoney', id);
+        const leftStock = await getInfo('userStock', id);
+        res.send({ "ok": true, "leftMoney": leftMoney, "leftStock": leftStock});
+    } else {
+        res.send({ ok: false, "error": "INSUFFICIENT"});
+    }
 });
 
 module.exports = router;
