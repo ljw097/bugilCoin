@@ -7,7 +7,7 @@ async function runDB() {
 
 }    
 async function postData() {
-  const url = 'http://localhost:4000/api/buy';
+  const url = 'http://localhost:4000/auth/signup';
   
   const response = await fetch(url, {
     method: 'POST',
@@ -15,12 +15,12 @@ async function postData() {
       'Content-Type': 'application/json;charset=utf-8'
     },
     body: JSON.stringify({
-      id: 'test',
-      count: 1,
-      type: 2
+      username: "teasdfst",
+      password: "tasdfasdfest",
+      password_c: "tasdfasdfest"
     })
   });
-
+  console.log(response)
   if (!response.ok) {
     throw new Error(`HTTP error! status: ${response.status}`);
   }

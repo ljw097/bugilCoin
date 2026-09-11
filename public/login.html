@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>로그인 - 북일코인</title>
+  <link rel="stylesheet" href="/css/style.css" />
+</head>
+<body>
+  <nav class="navbar">
+    <div class="container">
+      <a href="/" class="brand">
+        <span class="coin">B</span>
+        <span class="name">북일코인</span>
+      </a>
+    </div>
+  </nav>
+
+  <div class="auth-wrap">
+    <div class="auth-card">
+      <div class="brand">
+        <span class="coin">B</span>
+      </div>
+      <h1>로그인</h1>
+      <p class="sub">북일코인 계정으로 로그인하세요</p>
+
+      <form method="POST" action="/auth/login" id="login-form">
+        <div class="field">
+          <label for="username">아이디</label>
+          <input type="text" id="username" name="username" autocomplete="username" required />
+        </div>
+        <div class="field">
+          <label for="password">비밀번호</label>
+          <input type="password" id="password" name="password" autocomplete="current-password" required minlength="6" maxlength="20" />
+        </div>
+
+        <div class="auth-submit">
+          <button type="submit" class="btn btn-primary btn-block">로그인</button>
+        </div>
+      </form>
+
+      <div class="auth-switch">
+        아직 계정이 없으신가요? <a href="/signup">회원가입</a>
+      </div>
+    </div>
+  </div>
+</body>
+</html>

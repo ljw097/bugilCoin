@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>회원가입 - 북일코인</title>
+  <link rel="stylesheet" href="/css/style.css" />
+</head>
+<body>
+  <nav class="navbar">
+    <div class="container">
+      <a href="/" class="brand">
+        <span class="coin">B</span>
+        <span class="name">북일코인</span>
+      </a>
+    </div>
+  </nav>
+
+  <div class="auth-wrap">
+    <div class="auth-card">
+      <div class="brand">
+        <span class="coin">B</span>
+      </div>
+      <h1>회원가입</h1>
+      <p class="sub">가입하면 5,000원의 시드머니가 지급됩니다</p>
+
+      <form method="POST" action="/auth/signup" id="signup-form">
+        <div class="field">
+          <label for="username">아이디</label>
+          <input type="text" id="username" name="username" autocomplete="username" required />
+        </div>
+        <div class="field">
+          <label for="password">비밀번호</label>
+          <input type="password" id="password" name="password" autocomplete="new-password" required minlength="6" maxlength="20" />
+          <div class="hint">6자 이상 20자 이하로 입력해주세요</div>
+        </div>
+        <div class="field">
+          <label for="password_c">비밀번호 확인</label>
+          <input type="password" id="password_c" name="password_c" autocomplete="new-password" required minlength="6" maxlength="20" />
+          <div class="error" id="mismatch-error">비밀번호가 일치하지 않습니다</div>
+        </div>
+
+        <div class="auth-submit">
+          <button type="submit" class="btn btn-primary btn-block">회원가입</button>
+        </div>
+      </form>
+
+      <div class="auth-switch">
+        이미 계정이 있으신가요? <a href="/login">로그인</a>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const form = document.getElementById('signup-form');
+    const password = document.getElementById('password');
+    const passwordC = document.getElementById('password_c');
+    const mismatchError = document.getElementById('mismatch-error');
+
+    form.addEventListener('submit', (e) => {
+      if (password.value !== passwordC.value) {
+        e.preventDefault();
+        mismatchError.style.display = 'block';
+        passwordC.focus();
+      } else {
+        mismatchError.style.display = 'none';
+      }
+    });
+
+    passwordC.addEventListener('input', () => {
+      mismatchError.style.display = 'none';
+    });
+  </script>
+</body>
+</html>
